@@ -1,0 +1,19 @@
+{
+  "name": "Рофл-Мессенджер",
+  "short_name": "Рофл",
+  "description": "Мессенджер с мини-играми за флуд",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f0f14",
+  "theme_color": "#4a5cf5",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

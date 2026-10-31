@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta name="theme-color" content="#4a5cf5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Рофл">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Рофл-Мессенджер</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #0f0f14;
+    color: #e8e8ed;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  header {
+    padding: 12px 16px;
+    background: #1a1a24;
+    border-bottom: 1px solid #2a2a36;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  header h1 { font-size: 17px; font-weight: 600; }
+  #reset {
+    background: none;
+    border: 1px solid #3a3a4a;
+    color: #888;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  #reset:hover { color: #fff; border-color: #666; }
+
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .msg {
+    max-width: 80%;
+    padding: 8px 12px;
+    border-radius: 14px;
+    background: #2a2a36;
+    font-size: 15px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word;
+    align-self: flex-start;
+    animation: pop 0.15s ease-out;
+  }
+  .msg.own {
+    align-self: flex-end;
+    background: #4a5cf5;
+  }
+  @keyframes pop {
+    from { transform: scale(0.92); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  #counter {
+    padding: 6px 16px;
+    font-size: 12px;
+    color: #888;
+    background: #1a1a24;
+    text-align: center;
+    border-top: 1px solid #2a2a36;
+    flex-shrink: 0;
+  }
+  #counter.warn { color: #ff9060; font-weight: 600; }
+
+  #input-area {
+    padding: 12px 16px;
+    background: #1a1a24;
+    border-top: 1px solid #2a2a36;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  #input {
+    flex: 1;
+    background: #0f0f14;
+    border: 1px solid #2a2a36;
+    color: #e8e8ed;
+    padding: 10px 14px;
+    border-radius: 20px;
+    font-size: 15px;
+    outline: none;
+    font-family: inherit;
+    min-width: 0;
+  }
+  #input:focus { border-color: #4a5cf5; }
+  #input:disabled { opacity: 0.5; }
+  #send {
+    background: #4a5cf5;
+    border: none;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 15px;
+    font-family: inherit;
+  }
+  #send:hover:not(:disabled) { background: #5a6cff; }
+  #send:disabled { background: #333; color: #777; cursor: not-allowed; }
+
+  #game-canvas {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    z-index: 999;
+    background: #0f0f14;
+    cursor: crosshair;
+    touch-action: none;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>💬 Рофл-Мессенджер</h1>
+    <button id="reset" title="Сбросить всё">Сброс</button>
+  </header>
+
+  <div id="messages"></div>
+  <div id="counter">Осталось: 500 символов</div>
+
+  <div id="input-area">
+    <input id="input" placeholder="Напиши что-нибудь..." autocomplete="off">
+    <button id="send">→</button>
+  </div>
+
+  <canvas id="game-canvas"></canvas>
+
+<script>
+  // ========== КОНСТАНТЫ ==========
+  const LIMIT = 500;
+  const GAME_DURATION = 30000; // 30 секунд
+  const SPAWN_INTERVAL = 300;  // мс между эмодзи
+  const FALL_SPEED = 0.2;      // px/мс (~200px/сек)
+  const EMOJIS = ['😀','😂','🤡','💩','👽','🤖','🐸','🍕','🚀','💎','🔥','🌈'];
+
+  // ========== СОСТОЯНИЕ ==========
+  let messages = JSON.parse(localStorage.getItem('rfl_messages') || '[]');
+  let charCount = parseInt(localStorage.getItem('rfl_charCount') || '0');
+
+  const $ = (id) => document.getElementById(id);
+  const messagesEl = $('messages');
+  const counterEl = $('counter');
+  const inputEl = $('input');
+  const sendBtn = $('send');
+  const canvas = $('game-canvas');
+  const ctx = canvas.getContext('2d');
+// ========== ЧАТ ==========
+  function saveState() {
+    localStorage.setItem('rfl_charCount', charCount);
+    localStorage.setItem('rfl_messages', JSON.stringify(messages));
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
+  }
+
+  function render() {
+    messagesEl.innerHTML = messages.map(m =>
+      `<div class="msg ${m.own ? 'own' : ''}">${escapeHtml(m.text)}</div>`
+    ).join('');
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    const left = Math.max(0, LIMIT - charCount);
+    counterEl.textContent = `Осталось: ${left} символов`;
+    counterEl.classList.toggle('warn', left <= 50);
+
+    const locked = charCount >= LIMIT;
+    inputEl.disabled = locked;
+    sendBtn.disabled = locked;
+    inputEl.placeholder = locked
+      ? '🎮 Сначала поиграй, чтобы писать...'
+      : 'Напиши что-нибудь...';
+  }
+
+  const FAKE_REPLIES = ['лол', 'кек', 'ахахаха', 'ну ты и', 'серьёзно?', '😂', '👍', 'жесть'];
+
+  function sendMessage() {
+    const text = inputEl.value.trim();
+    if (!text) return;
+
+    if (charCount >= LIMIT) {
+      startGame();
+      return;
+    }
+
+    if (charCount + text.length > LIMIT) {
+      alert(`Слишком длинное сообщение! Осталось ${LIMIT - charCount} символов.`);
+      return;
+    }
+
+    messages.push({ text, own: true });
+    charCount += text.length;
+    inputEl.value = '';
+    saveState();
+    render();
+
+    // Фейковый ответ (чтобы было живее)
+    if (Math.random() < 0.35) {
+      setTimeout(() => {
+        const reply = FAKE_REPLIES[Math.floor(Math.random() * FAKE_REPLIES.length)];
+        messages.push({ text: reply, own: false });
+        saveState();
+        render();
+      }, 800 + Math.random() * 2000);
+    }
+
+    if (charCount >= LIMIT) {
+      setTimeout(startGame, 300);
+    }
+  }
+
+  // ========== ИГРА ==========
+  const game = {
+    active: false,
+    startTime: 0,
+    lastFrame: 0,
+    lastSpawn: 0,
+    score: 0,
+    emojis: []
+  };
+
+  function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener('resize', resizeCanvas);
+
+  function startGame() {
+    resizeCanvas();
+    game.active = true;
+    game.startTime = performance.now();
+    game.lastFrame = game.startTime;
+    game.lastSpawn = game.startTime;
+    game.score = 0;
+    game.emojis = [];
+    canvas.style.display = 'block';
+    requestAnimationFrame(gameLoop);
+  }
+
+  function gameLoop(now) {
+    if (!game.active) return;
+
+    const delta = Math.min(100, now - game.lastFrame);
+    game.lastFrame = now;
+
+    const elapsed = now - game.startTime;
+    const timeLeft = Math.max(0, GAME_DURATION - elapsed);
+
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+
+    // Фон
+    ctx.clearRect(0, 0, W, H);
+
+    // Спавн
+    if (now - game.lastSpawn > SPAWN_INTERVAL) {
+      game.emojis.push({
+        x: 40 + Math.random() * (W - 80),
+        y: -40,
+        emoji: EMOJIS[Math.floor(Math.random() * EMOJIS.length)]
+      });
+      game.lastSpawn = now;
+    }
+
+    // Обновление и отрисовка
+    ctx.font = '40px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    game.emojis = game.emojis.filter(e => e.y < H + 60);
+    for (const e of game.emojis) {
+      e.y += FALL_SPEED * delta;
+      ctx.fillText(e.emoji, e.x, e.y);
+    }
+
+    // HUD
+    ctx.fillStyle = 'rgba(0,0,0,0.75)';
+    ctx.fillRect(0, 0, W, 70);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 22px system-ui';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`⏱ ${(timeLeft/1000).toFixed(1)}`, 20, 24);
+    ctx.textAlign = 'right';
+    ctx.fillText(`Счёт: ${game.score}`, W - 20, 24);
+    ctx.textBaseline = 'alphabetic';
+
+    // Прогресс-бар
+const p = timeLeft / GAME_DURATION;
+    ctx.fillStyle = '#2a2a36';
+    ctx.fillRect(20, 48, W - 40, 8);
+    ctx.fillStyle = '#4a5cf5';
+    ctx.fillRect(20, 48, (W - 40) * p, 8);
+
+    ctx.fillStyle = '#ffd700';
+    ctx.font = '14px system-ui';
+    ctx.textAlign = 'left';
+    ctx.fillText('Лови эмодзи кликом!', 20, 30 + 55 - 10);
+
+    if (timeLeft <= 0) {
+      endGame();
+      return;
+    }
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (!game.active) return;
+    const mx = e.clientX;
+    const my = e.clientY;
+    for (let i = game.emojis.length - 1; i >= 0; i--) {
+      const em = game.emojis[i];
+      const dx = mx - em.x;
+      const dy = my - em.y;
+      if (dx*dx + dy*dy < 40*40) {
+        game.score++;
+        game.emojis.splice(i, 1);
+        break;
+      }
+    }
+  });
+
+  function endGame() {
+    game.active = false;
+    canvas.style.display = 'none';
+
+    charCount = 0;
+    saveState();
+    render();
+
+    const praise = game.score > 30 ? 'Ого, ты монстр! 🏆'
+                  : game.score > 15 ? 'Неплохо! 👏'
+                  : 'Ну хоть поиграл 😄';
+    alert(`Игра окончена!\nСчёт: ${game.score}\n${praise}\n\nМожешь писать дальше — счётчик сброшен.`);
+  }
+
+  // ========== СОБЫТИЯ ==========
+  sendBtn.addEventListener('click', sendMessage);
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
+  });
+
+  $('reset').addEventListener('click', () => {
+    if (confirm('Сбросить всё? Сообщения и счётчик будут очищены.')) {
+      localStorage.clear();
+      charCount = 0;
+      messages = [];
+      render();
+    }
+  });
+
+  // ========== СТАРТ ==========
+  render();
+  // Если счётчик уже «залимичен» (например, обновил страницу во время игры) — запускаем игру
+  if (charCount >= LIMIT) {
+    setTimeout(startGame, 500);
+  }
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(r => console.log('SW OK:', r.scope))
+        .catch(e => console.warn('SW fail:', e));
+    });
+  }
+</script>
+</body>
+</html>
+{
