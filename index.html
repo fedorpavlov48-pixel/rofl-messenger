@@ -87,7 +87,7 @@ header { padding: 10px 16px; background: #1a1a24; border-bottom: 1px solid #2a2a
     </div>
   </header>
   <div id="messages"></div>
-  <div id="counter">Осталось: 500 символов</div>
+  <div id="counter">Осталось: 75 символов</div>
   <div id="input-area">
     <input id="input" placeholder="Напиши что-нибудь..." autocomplete="off">
     <button id="send">→</button>
@@ -105,7 +105,7 @@ const SUPABASE_KEY = 'sb_publishable_eskiFaAhtxXEkDUTgYxyqA_yZhLIpEo';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const LIMIT = 500;
+const LIMIT = 75;
 const GAME_DURATION = 30000;
 const SPAWN_INTERVAL = 300;
 const FALL_SPEED = 0.2;
@@ -114,6 +114,10 @@ const CHAT_ID = 'general';
 const AVATAR_COLORS = ['#ff6b6b','#feca57','#48dbfb','#ff9ff3','#54a0ff','#5f27cd','#00d2d3','#1dd1a1','#ff9f43','#ee5253','#c56cf0','#17c0eb'];
 
 let charCount = parseInt(localStorage.getItem('rfl_charCount') || '0');
+if (charCount > LIMIT) {
+  charCount = 0;
+  localStorage.setItem('rfl_charCount', 0);
+}
 let currentUser = null;
 let currentNickname = '';
 let channel = null;
