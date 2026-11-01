@@ -14,7 +14,6 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: system-ui, -apple-system, sans-serif; background: #0f0f14; color: #e8e8ed; height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
 
-/* ===== Экран авторизации ===== */
 #auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 24px; gap: 12px; }
 #auth-screen h1 { font-size: 22px; margin-bottom: 16px; }
 #auth-screen input { width: 100%; max-width: 320px; padding: 12px 14px; border-radius: 10px; border: 1px solid #2a2a36; background: #1a1a24; color: #e8e8ed; font-size: 15px; outline: none; font-family: inherit; }
@@ -25,7 +24,6 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0f0f14; c
 #auth-error { color: #ff6b6b; font-size: 13px; text-align: center; min-height: 18px; max-width: 320px; }
 #nickname-hint { font-size: 11px; color: #666; max-width: 320px; text-align: center; }
 
-/* ===== Экран чата ===== */
 #chat-screen { display: flex; flex-direction: column; height: 100%; }
 header { padding: 10px 16px; background: #1a1a24; border-bottom: 1px solid #2a2a36; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; gap: 10px; }
 .header-title { display: flex; flex-direction: column; min-width: 0; }
@@ -50,6 +48,7 @@ header { padding: 10px 16px; background: #1a1a24; border-bottom: 1px solid #2a2a
 .msg { padding: 8px 12px; border-radius: 14px; background: #2a2a36; color: #e8e8ed; font-size: 15px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
 .msg-row.own .msg { background: #4a5cf5; color: #fff; border-bottom-right-radius: 4px; }
 .msg-row:not(.own) .msg { border-bottom-left-radius: 4px; }
+
 #counter { padding: 6px 16px; font-size: 12px; color: #888; background: #1a1a24; text-align: center; border-top: 1px solid #2a2a36; flex-shrink: 0; }
 #counter.warn { color: #ff9060; font-weight: 600; }
 #input-area { padding: 12px 16px; background: #1a1a24; border-top: 1px solid #2a2a36; display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
@@ -97,11 +96,11 @@ header { padding: 10px 16px; background: #1a1a24; border-bottom: 1px solid #2a2a
 <canvas id="game-canvas"></canvas>
 
 <script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0/+esm';
 
 // ⚠️ ВСТАВЬ СВОИ ЗНАЧЕНИЯ СЮДА:
-const SUPABASE_URL = 'https://cahqjwitbqhmduqehwfx.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_eskiFaAhtxXEkDUTgYxyqA_yZhLIpEo';
+const SUPABASE_URL = 'ВСТАВЬ_PROJECT_URL';
+const SUPABASE_KEY = 'ВСТАВЬ_PUBLISHABLE_KEY';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -115,10 +114,7 @@ const CHAT_ID = 'general';
 const AVATAR_COLORS = ['#ff6b6b','#feca57','#48dbfb','#ff9ff3','#54a0ff','#5f27cd','#00d2d3','#1dd1a1','#ff9f43','#ee5253','#c56cf0','#17c0eb'];
 
 let charCount = parseInt(localStorage.getItem('rfl_charCount') || '0');
-if (charCount > LIMIT) {
-  charCount = 0;
-  localStorage.setItem('rfl_charCount', 0);
-}
+if (charCount > LIMIT) { charCount = 0; localStorage.setItem('rfl_charCount', 0); }
 let currentUser = null;
 let currentNickname = '';
 let channel = null;
@@ -267,7 +263,7 @@ async function sendMessage() {
 function updateCounter() {
   const left = Math.max(0, LIMIT - charCount);
   counterEl.textContent = `Осталось: ${left} символов`;
-  counterEl.classList.toggle('warn', left <= 50);
+  counterEl.classList.toggle('warn', left <= 15);
   const locked = charCount >= LIMIT;
   inputEl.disabled = locked;
   sendBtn.disabled = locked;
@@ -420,7 +416,7 @@ function updateBounce(delta, W, H) {
   b.x += b.vx * delta;
   b.y += b.vy * delta;
   if (b.x < b.r || b.x > W - b.r) { b.vx *= -1; b.vy += (Math.random() - 0.5) * 0.1; b.x = Math.max(b.r, Math.min(W - b.r, b.x)); }
-  if (b.y < b.r + 80 || b.y > H - b.r) { b.vy *= -1; b.vx += (Math.random() - 0.5) * 0.1; b.y = Math.max(b.r + 80, Math.min(H - b.r, b.y)); }
+if (b.y < b.r + 80 || b.y > H - b.r) { b.vy *= -1; b.vx += (Math.random() - 0.5) * 0.1; b.y = Math.max(b.r + 80, Math.min(H - b.r, b.y)); }
 
   ctx.fillStyle = '#4a5cf5';
   ctx.beginPath();
@@ -444,7 +440,7 @@ function drawHUD(W, timeLeft) {
   ctx.textAlign = 'right';
   ctx.fillText(`Счёт: ${game.score}`, W - 20, 24);
   const p = timeLeft / GAME_DURATION;
-ctx.fillStyle = '#2a2a36';
+  ctx.fillStyle = '#2a2a36';
   ctx.fillRect(20, 48, W - 40, 8);
   ctx.fillStyle = '#4a5cf5';
   ctx.fillRect(20, 48, (W - 40) * p, 8);
@@ -497,72 +493,6 @@ function endGame() {
                : 'Ну хоть поиграл 😄';
   alert(`Игра «${names[game.type]}» окончена!\nСчёт: ${game.score}\n${praise}\n\nСчётчик сброшен.`);
 }
-function resizeCanvas() {
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = window.innerWidth * dpr;
-  canvas.height = window.innerHeight * dpr;
-  canvas.style.width = window.innerWidth + 'px';
-  canvas.style.height = window.innerHeight + 'px';
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-}
-window.addEventListener('resize', resizeCanvas);
-
-function startGame() {
-  if (game.active) return;
-  resizeCanvas();
-  game.active = true;
-  game.startTime = performance.now();
-  game.lastFrame = game.startTime;
-  game.lastSpawn = game.startTime;
-  game.score = 0;
-  game.emojis = [];
-  canvas.style.display = 'block';
-  requestAnimationFrame(gameLoop);
-}
-
-function gameLoop(now) {
-  if (!game.active) return;
-  const delta = Math.min(100, now - game.lastFrame);
-  game.lastFrame = now;
-  const elapsed = now - game.startTime;
-  const timeLeft = Math.max(0, GAME_DURATION - elapsed);
-  const W = window.innerWidth, H = window.innerHeight;
-  ctx.clearRect(0, 0, W, H);
-  if (now - game.lastSpawn > SPAWN_INTERVAL) {
-    game.emojis.push({ x: 40 + Math.random() * (W - 80), y: -40, emoji: EMOJIS[Math.floor(Math.random() * EMOJIS.length)] });
-    game.lastSpawn = now;
-  }
-  ctx.font = '40px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  game.emojis = game.emojis.filter(e => e.y < H + 60);
-  for (const e of game.emojis) { e.y += FALL_SPEED * delta; ctx.fillText(e.emoji, e.x, e.y); }
-  ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(0, 0, W, 70);
-  ctx.fillStyle = '#fff'; ctx.font = 'bold 22px system-ui'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  ctx.fillText(`⏱ ${(timeLeft/1000).toFixed(1)}`, 20, 24);
-  ctx.textAlign = 'right'; ctx.fillText(`Счёт: ${game.score}`, W - 20, 24);
-  const p = timeLeft / GAME_DURATION;
-  ctx.fillStyle = '#2a2a36'; ctx.fillRect(20, 48, W - 40, 8);
-  ctx.fillStyle = '#4a5cf5'; ctx.fillRect(20, 48, (W - 40) * p, 8);
-  if (timeLeft <= 0) { endGame(); return; }
-  requestAnimationFrame(gameLoop);
-}
-
-canvas.addEventListener('pointerdown', (e) => {
-  if (!game.active) return;
-  const mx = e.clientX, my = e.clientY;
-  for (let i = game.emojis.length - 1; i >= 0; i--) {
-    const em = game.emojis[i], dx = mx - em.x, dy = my - em.y;
-    if (dx*dx + dy*dy < 40*40) { game.score++; game.emojis.splice(i, 1); break; }
-  }
-});
-
-function endGame() {
-  game.active = false;
-  canvas.style.display = 'none';
-  charCount = 0;
-  localStorage.setItem('rfl_charCount', 0);
-  updateCounter();
-  alert(`Игра окончена!\nСчёт: ${game.score}\n\nСчётчик сброшен.`);
-}
 
 supabase.auth.onAuthStateChange((event, session) => {
   setTimeout(() => {
@@ -578,7 +508,7 @@ sendBtn.addEventListener('click', sendMessage);
 inputEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); } });
 
 if ('serviceWorker' in navigator) {
-window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
 }
 
 (async () => {
