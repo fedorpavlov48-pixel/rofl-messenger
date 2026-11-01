@@ -13,6 +13,8 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: system-ui, -apple-system, sans-serif; background: #0f0f14; color: #e8e8ed; height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+
+/* ===== Экран авторизации ===== */
 #auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 24px; gap: 12px; }
 #auth-screen h1 { font-size: 22px; margin-bottom: 16px; }
 #auth-screen input { width: 100%; max-width: 320px; padding: 12px 14px; border-radius: 10px; border: 1px solid #2a2a36; background: #1a1a24; color: #e8e8ed; font-size: 15px; outline: none; font-family: inherit; }
@@ -21,14 +23,33 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #0f0f14; c
 #login-btn { background: #4a5cf5; color: #fff; }
 #register-btn { background: transparent; color: #8a9cff; border: 1px solid #3a3a4a; }
 #auth-error { color: #ff6b6b; font-size: 13px; text-align: center; min-height: 18px; max-width: 320px; }
+#nickname-hint { font-size: 11px; color: #666; max-width: 320px; text-align: center; }
+
+/* ===== Экран чата ===== */
 #chat-screen { display: flex; flex-direction: column; height: 100%; }
-header { padding: 12px 16px; background: #1a1a24; border-bottom: 1px solid #2a2a36; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
-header h1 { font-size: 17px; font-weight: 600; }
+header { padding: 10px 16px; background: #1a1a24; border-bottom: 1px solid #2a2a36; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; gap: 10px; }
+.header-title { display: flex; flex-direction: column; min-width: 0; }
+.header-title .title { font-size: 16px; font-weight: 600; }
+.header-title .subtitle { font-size: 11px; color: #888; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+#my-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; color: #fff; font-size: 14px; flex-shrink: 0; }
 #logout { background: none; border: 1px solid #3a3a4a; color: #888; font-size: 12px; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-family: inherit; }
-#messages { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
-.msg { max-width: 80%; padding: 8px 12px; border-radius: 14px; background: #2a2a36; font-size: 15px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; align-self: flex-start; animation: pop 0.15s ease-out; }
-.msg.own { align-self: flex-end; background: #4a5cf5; }
-@keyframes pop { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+#logout:hover { color: #fff; border-color: #666; }
+
+#messages { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+.empty-state { color: #666; text-align: center; padding: 40px 20px; font-size: 14px; }
+
+.msg-row { display: flex; gap: 8px; align-items: flex-end; max-width: 85%; }
+.msg-row.own { align-self: flex-end; flex-direction: row-reverse; }
+.msg-row:not(.own) { align-self: flex-start; }
+.avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; color: #fff; flex-shrink: 0; font-size: 13px; }
+.msg-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.msg-meta { font-size: 11px; color: #888; padding: 0 6px; display: flex; gap: 6px; }
+.msg-row.own .msg-meta { justify-content: flex-end; }
+.msg-meta .nick { color: #aaa; font-weight: 600; }
+.msg { padding: 8px 12px; border-radius: 14px; background: #2a2a36; color: #e8e8ed; font-size: 15px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
+.msg-row.own .msg { background: #4a5cf5; color: #fff; border-bottom-right-radius: 4px; }
+.msg-row:not(.own) .msg { border-bottom-left-radius: 4px; }
 #counter { padding: 6px 16px; font-size: 12px; color: #888; background: #1a1a24; text-align: center; border-top: 1px solid #2a2a36; flex-shrink: 0; }
 #counter.warn { color: #ff9060; font-weight: 600; }
 #input-area { padding: 12px 16px; background: #1a1a24; border-top: 1px solid #2a2a36; display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
@@ -37,6 +58,7 @@ header h1 { font-size: 17px; font-weight: 600; }
 #input:disabled { opacity: 0.5; }
 #send { background: #4a5cf5; border: none; color: white; padding: 10px 18px; border-radius: 20px; font-weight: 600; cursor: pointer; font-size: 15px; font-family: inherit; }
 #send:disabled { background: #333; color: #777; cursor: not-allowed; }
+
 #game-canvas { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 999; background: #0f0f14; cursor: crosshair; touch-action: none; }
 </style>
 </head>
@@ -45,16 +67,24 @@ header h1 { font-size: 17px; font-weight: 600; }
 <div id="auth-screen">
   <h1>💬 Рофл-Мессенджер</h1>
   <input id="email" type="email" placeholder="Email" autocomplete="email">
+  <input id="nickname" type="text" placeholder="Никнейм (для регистрации)" maxlength="16" autocomplete="off">
   <input id="password" type="password" placeholder="Пароль (мин 6 символов)" autocomplete="current-password">
+  <div id="nickname-hint">Никнейм нужен только при регистрации. При входе можно оставить пустым.</div>
   <button id="login-btn">Войти</button>
   <button id="register-btn">Зарегистрироваться</button>
-<div id="auth-error"></div>
+  <div id="auth-error"></div>
 </div>
 
 <div id="chat-screen" style="display:none;">
   <header>
-    <h1>💬 Общий чат</h1>
-    <button id="logout">Выйти</button>
+    <div class="header-title">
+      <div class="title">💬 Общий чат</div>
+      <div class="subtitle" id="header-subtitle">Рофл-мессенджер</div>
+    </div>
+    <div class="header-right">
+      <div id="my-avatar">?</div>
+      <button id="logout">Выйти</button>
+    </div>
   </header>
   <div id="messages"></div>
   <div id="counter">Осталось: 500 символов</div>
@@ -81,9 +111,11 @@ const SPAWN_INTERVAL = 300;
 const FALL_SPEED = 0.2;
 const EMOJIS = ['😀','😂','🤡','💩','👽','🤖','🐸','🍕','🚀','💎','🔥','🌈'];
 const CHAT_ID = 'general';
+const AVATAR_COLORS = ['#ff6b6b','#feca57','#48dbfb','#ff9ff3','#54a0ff','#5f27cd','#00d2d3','#1dd1a1','#ff9f43','#ee5253','#c56cf0','#17c0eb'];
 
 let charCount = parseInt(localStorage.getItem('rfl_charCount') || '0');
 let currentUser = null;
+let currentNickname = '';
 let channel = null;
 
 const $ = id => document.getElementById(id);
@@ -99,8 +131,24 @@ const ctx = canvas.getContext('2d');
 function showAuth() { authScreen.style.display = 'flex'; chatScreen.style.display = 'none'; }
 function showChat() { authScreen.style.display = 'none'; chatScreen.style.display = 'flex'; }
 
+function colorFor(id) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
+  return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+}
+
+function initialOf(name) {
+  if (!name) return '?';
+  return name.trim()[0].toUpperCase();
+}
+
+function fmtTime(iso) {
+  const d = new Date(iso);
+  return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+}
+
 async function doLogin() {
-  const email = $('email').value.trim();
+const email = $('email').value.trim();
   const password = $('password').value;
   $('auth-error').textContent = '';
   const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -109,12 +157,18 @@ async function doLogin() {
 
 async function doRegister() {
   const email = $('email').value.trim();
+  const nickname = $('nickname').value.trim();
   const password = $('password').value;
   $('auth-error').textContent = '';
+  if (!nickname) { $('auth-error').textContent = 'Придумай никнейм'; return; }
+  if (nickname.length > 16) { $('auth-error').textContent = 'Никнейм до 16 символов'; return; }
   if (password.length < 6) { $('auth-error').textContent = 'Пароль минимум 6 символов'; return; }
-  const { error } = await supabase.auth.signUp({ email, password });
+  const { error } = await supabase.auth.signUp({
+    email, password,
+    options: { data: { nickname } }
+  });
   if (error) { $('auth-error').textContent = error.message; return; }
-  $('auth-error').textContent = 'Готово! Входи.';
+  $('auth-error').textContent = 'Готово! Теперь войди.';
 }
 
 async function doLogout() {
@@ -122,10 +176,45 @@ async function doLogout() {
 }
 
 function renderMessage(m) {
-  const div = document.createElement('div');
-  div.className = 'msg' + (currentUser && m.user_id === currentUser.id ? ' own' : '');
-  div.textContent = m.content;
-  messagesEl.appendChild(div);
+  const isOwn = currentUser && m.user_id === currentUser.id;
+  const nick = m.nickname || 'Анон';
+  const color = colorFor(m.user_id || nick);
+
+  const row = document.createElement('div');
+  row.className = 'msg-row' + (isOwn ? ' own' : '');
+
+  if (!isOwn) {
+    const av = document.createElement('div');
+    av.className = 'avatar';
+    av.style.background = color;
+    av.textContent = initialOf(nick);
+    row.appendChild(av);
+  }
+
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+
+  const meta = document.createElement('div');
+  meta.className = 'msg-meta';
+  if (!isOwn) {
+    const n = document.createElement('span');
+    n.className = 'nick';
+    n.style.color = color;
+    n.textContent = nick;
+    meta.appendChild(n);
+  }
+  const t = document.createElement('span');
+  t.textContent = fmtTime(m.created_at);
+  meta.appendChild(t);
+  body.appendChild(meta);
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg';
+  bubble.textContent = m.content;
+  body.appendChild(bubble);
+
+  row.appendChild(body);
+  messagesEl.appendChild(row);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
@@ -138,6 +227,13 @@ async function loadMessages() {
     .limit(200);
   if (error) { console.error(error); return; }
   messagesEl.innerHTML = '';
+  if (data.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = 'Пока сообщений нет. Напиши первым! 👋';
+    messagesEl.appendChild(empty);
+    return;
+  }
   data.forEach(renderMessage);
 }
 
@@ -152,7 +248,8 @@ async function sendMessage() {
   const { error } = await supabase.from('messages').insert({
     content: text,
     user_id: currentUser.id,
-    chat_id: CHAT_ID
+    chat_id: CHAT_ID,
+    nickname: currentNickname
   });
   if (error) { alert('Ошибка: ' + error.message); return; }
   inputEl.value = '';
@@ -173,21 +270,31 @@ function updateCounter() {
 }
 
 function subscribeRealtime() {
-if (channel) supabase.removeChannel(channel);
+  if (channel) supabase.removeChannel(channel);
   channel = supabase
     .channel('room:' + CHAT_ID)
     .on('postgres_changes', {
       event: 'INSERT',
       schema: 'public',
-      table: 'messages',
+table: 'messages',
       filter: `chat_id=eq.${CHAT_ID}`
-    }, (payload) => renderMessage(payload.new))
+    }, (payload) => {
+      if (messagesEl.querySelector('.empty-state')) messagesEl.innerHTML = '';
+      renderMessage(payload.new);
+    })
     .subscribe();
 }
 
 async function onSignedIn(user) {
   if (currentUser && currentUser.id === user.id) return;
   currentUser = user;
+  currentNickname = user.user_metadata?.nickname || user.email.split('@')[0];
+
+  const myAv = $('my-avatar');
+  myAv.style.background = colorFor(user.id);
+  myAv.textContent = initialOf(currentNickname);
+  $('header-subtitle').textContent = 'Ты: ' + currentNickname;
+
   showChat();
   await loadMessages();
   subscribeRealtime();
@@ -264,8 +371,10 @@ function endGame() {
 }
 
 supabase.auth.onAuthStateChange((event, session) => {
-  if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) onSignedIn(session.user);
-  if (event === 'SIGNED_OUT') { currentUser = null; showAuth(); }
+  setTimeout(() => {
+    if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) onSignedIn(session.user);
+    if (event === 'SIGNED_OUT') { currentUser = null; showAuth(); }
+  }, 0);
 });
 
 $('login-btn').addEventListener('click', doLogin);
@@ -275,7 +384,7 @@ sendBtn.addEventListener('click', sendMessage);
 inputEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); } });
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
 }
 
 (async () => {
