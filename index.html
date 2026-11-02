@@ -55,9 +55,7 @@ header { padding: 10px 16px; background: #1a1a24; border-bottom: 1px solid #2a2a
 #input-area { padding: 12px 16px; background: #1a1a24; border-top: 1px solid #2a2a36; display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
 #input { flex: 1; background: #0f0f14; border: 1px solid #2a2a36; color: #e8e8ed; padding: 10px 14px; border-radius: 20px; font-size: 15px; outline: none; font-family: inherit; min-width: 0; }
 #input:focus { border-color: #4a5cf5; }
-#input:disabled { opacity: 0.5; }
 #send { background: #4a5cf5; border: none; color: white; padding: 10px 18px; border-radius: 20px; font-weight: 600; cursor: pointer; font-size: 15px; font-family: inherit; }
-#send:disabled { background: #333; color: #777; cursor: not-allowed; }
 
 #game-canvas { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 999; background: #0f0f14; cursor: crosshair; touch-action: none; }
 </style>
@@ -82,17 +80,12 @@ header { padding: 10px 16px; background: #1a1a24; border-bottom: 1px solid #2a2a
       <div class="subtitle" id="header-subtitle">Рофл-мессенджер</div>
     </div>
     <div class="header-right">
-  <div id="my-avatar">?</div>
-  <button id="play-btn" title="Поиграть">🎮</button>
-  <button id="logout">Выйти</button>
-</div>
+      <div id="my-avatar">?</div>
+      <button id="play-btn" title="Поиграть">🎮</button>
+      <button id="logout">Выйти</button>
+    </div>
   </header>
   <div id="messages"></div>
-  <div id="messages"></div>
-<div id="input-area">
-  <input id="input" placeholder="Напиши что-нибудь..." autocomplete="off">
-  <button id="send">→</button>
-</div>
   <div id="input-area">
     <input id="input" placeholder="Напиши что-нибудь..." autocomplete="off">
     <button id="send">→</button>
@@ -104,13 +97,11 @@ header { padding: 10px 16px; background: #1a1a24; border-bottom: 1px solid #2a2a
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0/+esm';
 
-// ⚠️ ВСТАВЬ СВОИ ЗНАЧЕНИЯ СЮДА:
-const SUPABASE_URL = 'https://cahqjwitbqhmduqehwfx.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_eskiFaAhtxXEkDUTgYxyqA_yZhLIpEo';
+const SUPABASE_URL = 'ВСТАВЬ_PROJECT_URL';
+const SUPABASE_KEY = 'ВСТАВЬ_PUBLISHABLE_KEY';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const LIMIT = 75;
 const GAME_DURATION = 8000;
 const SPAWN_INTERVAL = 220;
 const FALL_SPEED = 0.3;
@@ -119,8 +110,6 @@ const GAME_TYPES = ['catch', 'reaction', 'bounce'];
 const CHAT_ID = 'general';
 const AVATAR_COLORS = ['#ff6b6b','#feca57','#48dbfb','#ff9ff3','#54a0ff','#5f27cd','#00d2d3','#1dd1a1','#ff9f43','#ee5253','#c56cf0','#17c0eb'];
 
-let charCount = parseInt(localStorage.getItem('rfl_charCount') || '0');
-if (charCount > LIMIT) { charCount = 0; localStorage.setItem('rfl_charCount', 0); }
 let currentUser = null;
 let currentNickname = '';
 let channel = null;
@@ -154,7 +143,7 @@ function fmtTime(iso) {
 }
 
 async function doLogin() {
-const email = $('email').value.trim();
+  const email = $('email').value.trim();
   const password = $('password').value;
   $('auth-error').textContent = '';
   const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -169,10 +158,7 @@ async function doRegister() {
   if (!nickname) { $('auth-error').textContent = 'Придумай никнейм'; return; }
   if (nickname.length > 16) { $('auth-error').textContent = 'Никнейм до 16 символов'; return; }
   if (password.length < 6) { $('auth-error').textContent = 'Пароль минимум 6 символов'; return; }
-  const { error } = await supabase.auth.signUp({
-    email, password,
-    options: { data: { nickname } }
-  });
+  const { error } = await supabase.auth.signUp({ email, password, options: { data: { nickname } } });
   if (error) { $('auth-error').textContent = error.message; return; }
   $('auth-error').textContent = 'Готово! Теперь войди.';
 }
@@ -255,7 +241,9 @@ async function sendMessage() {
   if (error) { alert('Ошибка: ' + error.message); return; }
   inputEl.value = '';
 }
+
 function updateCounter() {}
+
 function subscribeRealtime() {
   if (channel) supabase.removeChannel(channel);
   channel = supabase
@@ -263,7 +251,7 @@ function subscribeRealtime() {
     .on('postgres_changes', {
       event: 'INSERT',
       schema: 'public',
-table: 'messages',
+      table: 'messages',
       filter: `chat_id=eq.${CHAT_ID}`
     }, (payload) => {
       if (messagesEl.querySelector('.empty-state')) messagesEl.innerHTML = '';
@@ -285,7 +273,6 @@ async function onSignedIn(user) {
   showChat();
   await loadMessages();
   subscribeRealtime();
-  updateCounter();
 }
 
 const game = {
@@ -301,7 +288,7 @@ const game = {
 function resizeCanvas() {
   const dpr = window.devicePixelRatio || 1;
   canvas.width = window.innerWidth * dpr;
-  canvas.height = window.innerHeight * dpr;
+canvas.height = window.innerHeight * dpr;
   canvas.style.width = window.innerWidth + 'px';
   canvas.style.height = window.innerHeight + 'px';
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -344,32 +331,17 @@ function gameLoop(now) {
 
 function updateCatch(now, delta, W, H) {
   if (now - game.lastSpawn > SPAWN_INTERVAL) {
-    game.items.push({
-      x: 40 + Math.random() * (W - 80),
-      y: -40,
-      emoji: EMOJIS[Math.floor(Math.random() * EMOJIS.length)]
-    });
+    game.items.push({ x: 40 + Math.random() * (W - 80), y: -40, emoji: EMOJIS[Math.floor(Math.random() * EMOJIS.length)] });
     game.lastSpawn = now;
   }
-  ctx.font = '40px serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  ctx.font = '40px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   game.items = game.items.filter(e => e.y < H + 60);
-  for (const e of game.items) {
-    e.y += FALL_SPEED * delta;
-    ctx.fillText(e.emoji, e.x, e.y);
-  }
+  for (const e of game.items) { e.y += FALL_SPEED * delta; ctx.fillText(e.emoji, e.x, e.y); }
 }
 
 function updateReaction(now, W, H) {
   if (now - game.lastSpawn > 320) {
-    game.items.push({
-      x: 60 + Math.random() * (W - 120),
-      y: 100 + Math.random() * (H - 200),
-      bornAt: now,
-      life: 500 + Math.random() * 350,
-      color: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]
-    });
+    game.items.push({ x: 60 + Math.random() * (W - 120), y: 100 + Math.random() * (H - 200), bornAt: now, life: 500 + Math.random() * 350, color: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)] });
     game.lastSpawn = now;
   }
   game.items = game.items.filter(t => now - t.bornAt < t.life);
@@ -377,13 +349,8 @@ function updateReaction(now, W, H) {
     const age = now - t.bornAt;
     ctx.globalAlpha = 1 - age / t.life;
     ctx.fillStyle = t.color;
-    ctx.beginPath();
-    ctx.arc(t.x, t.y, 32, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.font = '26px serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    ctx.beginPath(); ctx.arc(t.x, t.y, 32, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = '26px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText('⭐', t.x, t.y);
     ctx.globalAlpha = 1;
   }
@@ -391,53 +358,34 @@ function updateReaction(now, W, H) {
 
 function updateBounce(delta, W, H) {
   if (game.items.length === 0) {
-    game.items.push({
-      x: W / 2, y: H / 2,
-      vx: (Math.random() - 0.5) * 1.2,
-      vy: (Math.random() - 0.5) * 1.2,
-      r: 35
-    });
+    game.items.push({ x: W / 2, y: H / 2, vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2, r: 35 });
   }
   const b = game.items[0];
   b.x += b.vx * delta;
   b.y += b.vy * delta;
   if (b.x < b.r || b.x > W - b.r) { b.vx *= -1; b.vy += (Math.random() - 0.5) * 0.1; b.x = Math.max(b.r, Math.min(W - b.r, b.x)); }
-if (b.y < b.r + 80 || b.y > H - b.r) { b.vy *= -1; b.vx += (Math.random() - 0.5) * 0.1; b.y = Math.max(b.r + 80, Math.min(H - b.r, b.y)); }
-
+  if (b.y < b.r + 80 || b.y > H - b.r) { b.vy *= -1; b.vx += (Math.random() - 0.5) * 0.1; b.y = Math.max(b.r + 80, Math.min(H - b.r, b.y)); }
   ctx.fillStyle = '#4a5cf5';
-  ctx.beginPath();
-  ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#fff';
-  ctx.font = '34px serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = '34px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText('🎾', b.x, b.y);
 }
 
 function drawHUD(W, timeLeft) {
   ctx.fillStyle = 'rgba(0,0,0,0.78)';
   ctx.fillRect(0, 0, W, 70);
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 22px system-ui';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 22px system-ui';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
   ctx.fillText(`⏱ ${(timeLeft/1000).toFixed(1)}`, 20, 24);
   ctx.textAlign = 'right';
   ctx.fillText(`Счёт: ${game.score}`, W - 20, 24);
   const p = timeLeft / GAME_DURATION;
-  ctx.fillStyle = '#2a2a36';
-  ctx.fillRect(20, 48, W - 40, 8);
-  ctx.fillStyle = '#4a5cf5';
-  ctx.fillRect(20, 48, (W - 40) * p, 8);
-
+  ctx.fillStyle = '#2a2a36'; ctx.fillRect(20, 48, W - 40, 8);
+  ctx.fillStyle = '#4a5cf5'; ctx.fillRect(20, 48, (W - 40) * p, 8);
   const names = { catch: '🎯 Лови!', reaction: '⚡ Успей кликнуть!', bounce: '🎾 Попади по шарику!' };
-  ctx.fillStyle = '#aaa';
-  ctx.font = '13px system-ui';
-  ctx.textAlign = 'left';
+  ctx.fillStyle = '#aaa'; ctx.font = '13px system-ui'; ctx.textAlign = 'left';
   ctx.fillText(names[game.type] || '', 20, 88);
 }
-
 canvas.addEventListener('pointerdown', (e) => {
   if (!game.active) return;
   e.preventDefault();
@@ -470,11 +418,13 @@ canvas.addEventListener('pointerdown', (e) => {
 function endGame() {
   game.active = false;
   canvas.style.display = 'none';
-    const names = { catch: 'Ловля', reaction: 'Реакция', bounce: 'Шарик' };
+  const names = { catch: 'Ловля', reaction: 'Реакция', bounce: 'Шарик' };
   const praise = game.score > 10 ? 'Ого, ты монстр! 🏆'
                : game.score > 5 ? 'Неплохо! 👏'
                : 'Ну хоть поиграл 😄';
   alert(`Игра «${names[game.type]}» окончена!\nСчёт: ${game.score}\n${praise}`);
+}
+
 supabase.auth.onAuthStateChange((event, session) => {
   setTimeout(() => {
     if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) onSignedIn(session.user);
@@ -501,3 +451,4 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
+
